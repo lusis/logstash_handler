@@ -19,6 +19,8 @@ This cookbook uses the following attributes to configure how it is installed.
 Optional attribute
 
 * `node['chef_client']['handler']['logstash']['tags']` - Any additional tags you want sent along with the event. This can save on filter usage down the pipeline
+* `node['chef_client']['handler']['logstash']['timeout']` - How long to attempt to connect and send before timing out the request.
+
 
 Usage
 =====

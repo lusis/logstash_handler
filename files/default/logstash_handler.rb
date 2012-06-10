@@ -19,15 +19,17 @@
 require "chef"
 require "chef/handler"
 require "socket"
+require "timeout"
 
 
-# TODO: Add a timeout
-#
-class LogstashReporting < Chef::Handler
-  attr_writer :tags, :host, :port
+class Logstash < Chef::Handler
+  attr_writer :tags, :host, :port, :timeout
 
   def initialize(options = {})
-    @tags = options[:tags] || Array.new
+    options[:tags] ||= Array.new
+    options[:timeout] ||= 15
+    @tags = options[:tags]
+    @timeout = options[:timeout]
     @host = options[:host]
     @port = options[:port]
   end
@@ -35,7 +37,7 @@ class LogstashReporting < Chef::Handler
   def report
     # A logstash json_event looks like this:
     # {
-    #   "@source":"determined by logstash input def",
+    #   "@source":"typicall determined by logstash input def",
     #   "@type":"determined by logstash input def",
     #   "@tags":[],
     #   "@fields":{},
@@ -45,12 +47,16 @@ class LogstashReporting < Chef::Handler
     #   "@message":"escaped representation of event"
     # }
     #
+    # When sending an event in native `json_event` format
+    # You are required to set everything EXCEPT @type
 
     @updated_resources = []
     if run_status.updated_resources
       run_status.updated_resources.each {|r| @updated_resources << r.to_s }
     end
     event = Hash.new
+    event["@source"] = "chef://#{run_status.node.name}/handler/logstash"
+    event["@source_path"] = "#{__FILE__}"
     event["@source_host"] = run_status.node.name
     event["@tags"] = @tags
     event["@fields"] = Hash.new
@@ -72,11 +78,13 @@ class LogstashReporting < Chef::Handler
     end
     event["@message"] = run_status.exception || "Chef client run completed in #{run_status.elapsed_time}"
 
-    json = event.to_json
-    ls = TCPSocket.new "#{@host}" , @port
     begin
-      ls.puts json
-      ls.close
+      Timeout::timeout(@timeout) do
+        json = event.to_json
+        ls = TCPSocket.new "#{@host}" , @port
+        ls.puts json
+        ls.close
+      end
     rescue Exception => e
       Chef::Log.debug("Failed to write to #{@host} on port #{@port}: #{e.message}")
     end
