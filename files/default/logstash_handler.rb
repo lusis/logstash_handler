@@ -41,14 +41,16 @@ class Logstash < Chef::Handler
     #   "@type":"determined by logstash input def",
     #   "@tags":[],
     #   "@fields":{},
-    #   "@timestamp":"ISO8601 of event",
+    #   "@timestamp":"ISO8601 of event seen by logstash",
     #   "@source_host":"host.foo.com",
     #   "@source_path":"typically the name of the log file",
     #   "@message":"escaped representation of event"
     # }
     #
     # When sending an event in native `json_event` format
-    # You are required to set everything EXCEPT @type
+    # - You are required to set everything EXCEPT @type and @timestamp
+    # - @type CAN be overridden
+    # - @timestamp will be ignored
 
     @updated_resources = []
     if run_status.updated_resources
