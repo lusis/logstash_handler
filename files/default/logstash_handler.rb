@@ -66,8 +66,8 @@ class Logstash < Chef::Handler
     event["@fields"]["elapsed_time"] = run_status.elapsed_time
     event["@fields"]["success"] = run_status.success?
     # (TODO) Convert to ISO8601
-    event["@fields"]["start_time"] = run_status.start_time
-    event["@fields"]["end_time"] = run_status.end_time
+    event["@fields"]["start_time"] = run_status.start_time.to_time.iso8601
+    event["@fields"]["end_time"] = run_status.end_time.to_time.iso8601
     if run_status.backtrace
       event["@fields"]["backtrace"] = run_status.backtrace.join("\n")
     else
