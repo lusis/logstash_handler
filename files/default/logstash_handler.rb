@@ -21,6 +21,7 @@ require "chef/handler"
 require "socket"
 require "timeout"
 require "time"
+require "json"
 
 
 class Logstash < Chef::Handler
