@@ -35,5 +35,5 @@ chef_handler "Chef::Handler::Logstash" do
               :metadata => node['chef_client']['handler']['logstash']['metadata']
   )    
   action :enable
-  support :report => true
+  supports :report => true
 end
