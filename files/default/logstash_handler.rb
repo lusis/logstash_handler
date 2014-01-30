@@ -82,6 +82,7 @@ class Logstash < Chef::Handler
         ls.puts json
         ls.close
       end
+      Chef::Log.info(json)
     rescue Exception => e
       Chef::Log.debug("Failed to write to #{@host} on port #{@port}: #{e.message}")
     end
