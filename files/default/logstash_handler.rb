@@ -70,7 +70,7 @@ class Logstash < Chef::Handler
     end
     event["message"] = run_status.exception || "Chef client run completed in #{run_status.elapsed_time}"
     if @metadata
-      metadata.each do |k,v|
+      @metadata.each do |k,v|
         event[k] = v
       end
     end
