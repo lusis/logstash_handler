@@ -28,12 +28,12 @@ end
 
 chef_handler "Chef::Handler::Logstash" do
   source "#{node['chef_handler']['handler_path']}/logstash_handler.rb"
-  arguments(
+  arguments [
               :host => node['chef_client']['handler']['logstash']['host'],
               :port => node['chef_client']['handler']['logstash']['port'],
               :timeout => node['chef_client']['handler']['logstash']['timeout'],
               :metadata => node['chef_client']['handler']['logstash']['metadata']
-  )    
+  ]
   action :enable
-  supports :report => true
+  supports :report => true, :exception => true
 end
