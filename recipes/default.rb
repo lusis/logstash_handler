@@ -23,8 +23,8 @@ include_recipe "chef_handler"
 cookbook_file "#{node['chef_handler']['handler_path']}/logstash_handler.rb" do
   source "logstash_handler.rb"
   mode "0600"
-  action :nothing
-end.run_action(:create)
+  action :create
+end
 
 chef_handler "Chef::Handler::Logstash" do
   source "#{node['chef_handler']['handler_path']}/logstash_handler.rb"
@@ -34,5 +34,6 @@ chef_handler "Chef::Handler::Logstash" do
               :timeout => node['chef_client']['handler']['logstash']['timeout'],
               :metadata => node['chef_client']['handler']['logstash']['metadata']
             ]
-  action :nothing
-end.run_action(:enable)
+  action :enable
+  support :report => true
+end
