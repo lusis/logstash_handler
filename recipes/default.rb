@@ -20,7 +20,6 @@
 
 include_recipe "chef_handler"
 
-
 cookbook_file "#{node['chef_handler']['handler_path']}/logstash_handler.rb" do
   source "logstash_handler.rb"
   mode "0600"
@@ -32,8 +31,8 @@ chef_handler "Chef::Handler::Logstash" do
   arguments [
               :host => node['chef_client']['handler']['logstash']['host'],
               :port => node['chef_client']['handler']['logstash']['port'],
-              :tags => node['chef_client']['handler']['logstash']['tags'],
-              :timeout => node['chef_client']['handler']['logstash']['timeout']
+              :timeout => node['chef_client']['handler']['logstash']['timeout'],
+              :metadata => node['chef_client']['handler']['logstash']['metadata']
             ]
   action :nothing
 end.run_action(:enable)

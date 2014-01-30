@@ -20,65 +20,60 @@ require "chef"
 require "chef/handler"
 require "socket"
 require "timeout"
+require "time"
 
 
 class Logstash < Chef::Handler
-  attr_writer :tags, :host, :port, :timeout
+  attr_writer :metadata, :host, :port, :timeout
 
   def initialize(options = {})
     options[:tags] ||= Array.new
     options[:timeout] ||= 15
-    @tags = options[:tags]
+    @metadata = options[:metadata]
     @timeout = options[:timeout]
     @host = options[:host]
     @port = options[:port]
   end
 
   def report
-    # A logstash json_event looks like this:
+    # A logstash v1 event looks like this:
     # {
-    #   "@source":"typicall determined by logstash input def",
-    #   "@type":"determined by logstash input def",
-    #   "@tags":[],
-    #   "@fields":{},
-    #   "@timestamp":"ISO8601 of event seen by logstash",
-    #   "@source_host":"host.foo.com",
-    #   "@source_path":"typically the name of the log file",
+    #   "@version":1,
     #   "@message":"escaped representation of event"
     # }
     #
-    # When sending an event in native `json_event` format
-    # - You are required to set everything EXCEPT @type and @timestamp
-    # - @type CAN be overridden
-    # - @timestamp will be ignored
+    # The rest of the JSON can contain whatever is wanted but a good set of
+    # basic fields to add are
+    # "message" - The message you want to communicate
+    # "source_host" - The originator of the message
+    #
+    # This handler will add those two fields along with some others with the chef run results
 
     @updated_resources = []
     if run_status.updated_resources
       run_status.updated_resources.each {|r| @updated_resources << r.to_s }
     end
     event = Hash.new
-    event["@source"] = "chef://#{run_status.node.name}/handler/logstash"
-    event["@source_path"] = "#{__FILE__}"
-    event["@source_host"] = run_status.node.name
-    event["@tags"] = @tags
-    event["@fields"] = Hash.new
-    event["@fields"]["updated_resources"] = @updated_resources
-    event["@fields"]["elapsed_time"] = run_status.elapsed_time
-    event["@fields"]["success"] = run_status.success?
-    # (TODO) Convert to ISO8601
-    event["@fields"]["start_time"] = run_status.start_time.to_time.iso8601
-    event["@fields"]["end_time"] = run_status.end_time.to_time.iso8601
+    event["@version"] = 1
+    event["@timestamp"] = DateTime.now.iso8601
+    event["source_host"] = run_status.node.name
+    event["updated_resources"] = @updated_resources
+    event["elapsed_time"] = run_status.elapsed_time
+    event["success"] = run_status.success?
+    event["start_time"] = run_status.start_time.to_time.iso8601
+    event["end_time"] = run_status.end_time.to_time.iso8601
     if run_status.backtrace
-      event["@fields"]["backtrace"] = run_status.backtrace.join("\n")
-    else
-      event["@fields"]["backtrace"] = ""
+      event["backtrace"] = run_status.backtrace.join("\n")
     end
     if run_status.exception
-      event["@fields"]["exception"] = run_status.exception
-    else
-      event["@fields"]["exception"] = ""
+      event["exception"] = run_status.exception
     end
-    event["@message"] = run_status.exception || "Chef client run completed in #{run_status.elapsed_time}"
+    event["message"] = run_status.exception || "Chef client run completed in #{run_status.elapsed_time}"
+    if @metadata
+      metadata.each do |k,v|
+        event[k] = v
+      end
+    end
 
     begin
       Timeout::timeout(@timeout) do

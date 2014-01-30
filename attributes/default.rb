@@ -17,4 +17,4 @@
 default['chef_client']['handler']['logstash']['host'] = "127.0.0.1"
 default['chef_client']['handler']['logstash']['port'] = 5959
 default['chef_client']['handler']['logstash']['timeout'] = 60
-default['chef_client']['handler']['logstash']['tags'] = ["chef-client"]
+default['chef_client']['handler']['logstash']['metadata'] = {}
