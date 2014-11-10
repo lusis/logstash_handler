@@ -21,74 +21,79 @@ require "chef/handler"
 require "socket"
 require "timeout"
 
-
-class Logstash < Chef::Handler
-  attr_writer :tags, :host, :port, :timeout
-
-  def initialize(options = {})
-    options[:tags] ||= Array.new
-    options[:timeout] ||= 15
-    @tags = options[:tags]
-    @timeout = options[:timeout]
-    @host = options[:host]
-    @port = options[:port]
-  end
-
-  def report
-    # A logstash json_event looks like this:
-    # {
-    #   "@source":"typicall determined by logstash input def",
-    #   "@type":"determined by logstash input def",
-    #   "@tags":[],
-    #   "@fields":{},
-    #   "@timestamp":"ISO8601 of event seen by logstash",
-    #   "@source_host":"host.foo.com",
-    #   "@source_path":"typically the name of the log file",
-    #   "@message":"escaped representation of event"
-    # }
-    #
-    # When sending an event in native `json_event` format
-    # - You are required to set everything EXCEPT @type and @timestamp
-    # - @type CAN be overridden
-    # - @timestamp will be ignored
-
-    @updated_resources = []
-    if run_status.updated_resources
-      run_status.updated_resources.each {|r| @updated_resources << r.to_s }
+module CustomHandler
+  class Logstash < Chef::Handler
+    attr_writer :tags, :host, :port, :timeout
+  
+    def initialize(options = {})
+      options[:tags] ||= Array.new
+      options[:timeout] ||= 15
+      @tags = options[:tags]
+      @timeout = options[:timeout]
+      @host = options[:host]
+      @port = options[:port]
     end
-    event = Hash.new
-    event["@source"] = "chef://#{run_status.node.name}/handler/logstash"
-    event["@source_path"] = "#{__FILE__}"
-    event["@source_host"] = run_status.node.name
-    event["@tags"] = @tags
-    event["@fields"] = Hash.new
-    event["@fields"]["updated_resources"] = @updated_resources
-    event["@fields"]["elapsed_time"] = run_status.elapsed_time
-    event["@fields"]["success"] = run_status.success?
-    # (TODO) Convert to ISO8601
-    event["@fields"]["start_time"] = run_status.start_time.to_time.iso8601
-    event["@fields"]["end_time"] = run_status.end_time.to_time.iso8601
-    if run_status.backtrace
-      event["@fields"]["backtrace"] = run_status.backtrace.join("\n")
-    else
-      event["@fields"]["backtrace"] = ""
-    end
-    if run_status.exception
-      event["@fields"]["exception"] = run_status.exception
-    else
-      event["@fields"]["exception"] = ""
-    end
-    event["@message"] = run_status.exception || "Chef client run completed in #{run_status.elapsed_time}"
-
-    begin
-      Timeout::timeout(@timeout) do
-        json = event.to_json
-        ls = TCPSocket.new "#{@host}" , @port
-        ls.puts json
-        ls.close
+  
+    def report
+      # A logstash json_event looks like this:
+      # {
+      #   "@source":"typicall determined by logstash input def",
+      #   "@type":"determined by logstash input def",
+      #   "@tags":[],
+      #   "@fields":{},
+      #   "@timestamp":"ISO8601 of event seen by logstash",
+      #   "@source_host":"host.foo.com",
+      #   "@source_path":"typically the name of the log file",
+      #   "@message":"escaped representation of event"
+      # }
+      #
+      # When sending an event in native `json_event` format
+      # - You are required to set everything EXCEPT @type and @timestamp
+      # - @type CAN be overridden
+      # - @timestamp will be ignored
+  
+      @updated_resources = []
+      if run_status.updated_resources
+        run_status.updated_resources.each {|r| @updated_resources << r.to_s }
       end
-    rescue Exception => e
-      Chef::Log.debug("Failed to write to #{@host} on port #{@port}: #{e.message}")
+      event = Hash.new
+      event["@source"] = "chef://#{run_status.node.name}/handler/logstash"
+      event["@source_path"] = "#{__FILE__}"
+      event["@source_host"] = run_status.node.name
+      event["@tags"] = @tags
+      event["@fields"] = Hash.new
+      event["@fields"]["updated_resources"] = @updated_resources
+      event["@fields"]["elapsed_time"] = run_status.elapsed_time
+      event["@fields"]["success"] = run_status.success?
+      # (TODO) Convert to ISO8601
+      event["@fields"]["start_time"] = run_status.start_time.to_time.iso8601
+      event["@fields"]["end_time"] = run_status.end_time.to_time.iso8601
+      if run_status.backtrace
+        event["@fields"]["backtrace"] = run_status.backtrace.join("\n")
+      else
+        event["@fields"]["backtrace"] = ""
+      end
+      if run_status.exception
+        event["@fields"]["exception"] = run_status.exception
+      else
+        event["@fields"]["exception"] = ""
+      end
+      event["@message"] = run_status.exception || "Chef client run completed in #{run_status.elapsed_time}"
+      
+      json = event.to_json
+      logfile = File.open("/var/log/chef_handler_logstash.log", "w")
+      logfile.puts "test line"
+      logfile.puts json
+      begin
+        Timeout::timeout(@timeout) do
+          
+          ls = TCPSocket.new "#{@host}" , @port
+          ls.puts json
+          ls.close
+        end
+      rescue Exception => e
+        Chef::Log.debug("Failed to write to #{@host} on port #{@port}: #{e.message}")
+      end
     end
   end
 end
