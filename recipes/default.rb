@@ -27,7 +27,7 @@ cookbook_file "#{node['chef_handler']['handler_path']}/logstash_handler.rb" do
   action :nothing
 end.run_action(:create)
 
-chef_handler "Chef::Handler::Logstash" do
+chef_handler "CustomHandler::Logstash" do
   source "#{node['chef_handler']['handler_path']}/logstash_handler.rb"
   arguments [
               :host => node['chef_client']['handler']['logstash']['host'],
