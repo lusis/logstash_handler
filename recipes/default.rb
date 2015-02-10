@@ -27,13 +27,21 @@ cookbook_file "#{node['chef_handler']['handler_path']}/logstash_handler.rb" do
   action :nothing
 end.run_action(:create)
 
-chef_handler "Chef::Handler::Logstash" do
+if Chef::Config[:solo]
+  logstash_type = 'chef-solo'
+else
+  logstash_type = 'chef-client'
+end
+
+chef_handler "CustomHandler::Logstash" do
   source "#{node['chef_handler']['handler_path']}/logstash_handler.rb"
   arguments [
               :host => node['chef_client']['handler']['logstash']['host'],
               :port => node['chef_client']['handler']['logstash']['port'],
               :tags => node['chef_client']['handler']['logstash']['tags'],
-              :timeout => node['chef_client']['handler']['logstash']['timeout']
+              :timeout => node['chef_client']['handler']['logstash']['timeout'],
+              :type => logstash_type,
+              :protocol => node['chef_client']['handler']['logstash']['protocol']
             ]
   action :nothing
 end.run_action(:enable)
