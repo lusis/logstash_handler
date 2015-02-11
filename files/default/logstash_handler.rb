@@ -93,6 +93,12 @@ module CustomHandler
       if @application_name
         event["application_name"] = @application_name
       end
+      if @node_name
+        event["node_name"] = @node_name
+      end
+      if @run_list
+        event["run_list"] = @run_list
+      end
 
       begin
         Chef::Log.debug("logging to #{@host} on port #{@port}")
