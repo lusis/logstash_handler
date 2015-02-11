@@ -24,7 +24,7 @@ require "timeout"
 
 module CustomHandler
   class Logstash < Chef::Handler
-    attr_writer :tags, :host, :port, :timeout, :type, :protocol
+    attr_writer :tags, :host, :port, :timeout, :type, :protocol, :application_name, :node_name, :run_list
 
     def initialize(options = {})
       Chef::Log.debug("initializing logstash handler")
@@ -36,6 +36,9 @@ module CustomHandler
       @port = options[:port]
       @type = options[:type]
       @protocol = options[:protocol]
+      @application_name = options[:application_name]
+      @node_name = options[:node_name]
+      @run_list = options[:run_list]
     end
 
     def report
@@ -86,6 +89,9 @@ module CustomHandler
       event["message"] = run_status.exception || "Chef client run completed in #{run_status.elapsed_time}"
       if @type
         event["type"] = @type
+      end
+      if @application_name
+        event["application_name"] = @application_name
       end
 
       begin

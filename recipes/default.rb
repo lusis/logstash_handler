@@ -41,7 +41,10 @@ chef_handler "CustomHandler::Logstash" do
               :tags => node['chef_client']['handler']['logstash']['tags'],
               :timeout => node['chef_client']['handler']['logstash']['timeout'],
               :type => logstash_type,
-              :protocol => node['chef_client']['handler']['logstash']['protocol']
+              :protocol => node['chef_client']['handler']['logstash']['protocol'],
+              :application_name => node[:application_name],
+              :node_name => Chef::Config[:node_name],
+              :run_list => node['run_list']
             ]
   action :nothing
 end.run_action(:enable)
